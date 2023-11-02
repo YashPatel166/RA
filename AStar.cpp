@@ -113,7 +113,7 @@ AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
                 findNodeOnList(closedSet, newCoordinates)) {
                 continue;
             }
-            uint totalCost = current->G + ((i < 4) ? 10 : 14);
+            uint totalCost = current->G + ((i < 4) ? 10 : 14);  //NOTE: Predefined costs are given to nodes as of now, for straight lines = 10 and diagnol = 14
 
             Node *successor = findNodeOnList(openSet, newCoordinates);
             if (successor == nullptr) {
