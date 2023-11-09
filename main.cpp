@@ -18,7 +18,7 @@ int main()
     generator.setWorldSize({15, 15});
     generator.setHeuristic(AStar::Heuristic::euclidean);
     generator.setDiagonalMovement(true);
-
+    generator.ZobristTable(100);
     std::cout << "Generate path ... \n";
     auto path = generator.findPath({3,6}, {0, 3});
 
