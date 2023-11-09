@@ -4,8 +4,9 @@
 #include <math.h>
 #include <chrono>
 #include <vector>
-
-
+#include <unordered_map>
+#include <random>
+#include <cstdint>
 #include "/usr/local/opt/libomp/include/omp.h"
 
 using namespace std::placeholders;
