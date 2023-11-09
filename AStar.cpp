@@ -65,6 +65,20 @@ void AStar::Generator::removeCollision(Vec2i coordinates_)
     }
 }
 
+void AStar::Generator::ZobristTable(uint stateSpaceSize)
+{
+   std::unordered_map<int, uint64_t> zobristTable;
+   std::default_random_engine generator(42);
+   std::uniform_int_distribution<uint64_t> distribution(0, std::numeric_limits<uint64_t>::max());
+
+   for (int state = 0; state < stateSpaceSize; state++) {
+        zobristTable[state] = distribution(generator);
+    }
+    for (int state = 0; state < stateSpaceSize; state++) {
+        std::cout << "State " << state << ": " << zobristTable[state] << std::endl;
+    }
+}
+
 void AStar::Generator::clearCollisions()
 {
     walls.clear();
