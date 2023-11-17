@@ -13,21 +13,21 @@
 
 int main()
 {
-    //auto start = std::chrono::high_resolution_clock::now();
     AStar::Generator generator;
     generator.setWorldSize({15, 15});
     generator.setHeuristic(AStar::Heuristic::euclidean);
     generator.setDiagonalMovement(true);
-    generator.ZobristTable(100);
     std::cout << "Generate path ... \n";
-    auto path = generator.findPath({3,6}, {0, 3});
+    int x1, y1, x2, y2;
+    std::cout<<"Enter X1 and Y1:\n";
+    std::cin>>x1>>y1;
+    std::cout<<"Enter X2 and Y2:\n";
+    std::cin>>x2>>y2;
+    generator.ZobristTable(x1, y1, x2, y2, 100);
+    auto path = generator.findPath({x1,y1}, {x2,y2});
 
     for(auto& coordinate : path) {
-        std::cout << "("<< coordinate.x << " " << coordinate.y << ") -> ";
+        std::cout << "("<< coordinate.x << "," << coordinate.y << ") -> ";
     }
      std::cout<<"\n";
- //  auto stop = std::chrono::high_resolution_clock::now();
-	//auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
-	
-    //std::cout <<"\n"<<"Time taken by function: "<< duration.count() << " microseconds \n";
 }
