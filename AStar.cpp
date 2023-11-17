@@ -6,9 +6,8 @@
 #include <vector>
 #include <unordered_map>
 #include <random>
-#include <cstdint>
 #include "/usr/local/opt/libomp/include/omp.h"
-
+#include <cstdint>
 using namespace std::placeholders;
 
 bool AStar::Vec2i::operator == (const Vec2i& coordinates_)
@@ -66,25 +65,35 @@ void AStar::Generator::removeCollision(Vec2i coordinates_)
     }
 }
 
-void AStar::Generator::ZobristTable(uint stateSpaceSize)
+//void AStar::Generator::CalcHash(uint stateSpaceSize)
+//{
+  //  uint shift = 10 % (8 * .bit.length()
+//}
+
+void AStar::Generator::ZobristTable(uint x1, uint x2, uint y1, uint y2,uint stateSpaceSize)
 {
    std::unordered_map<int, uint64_t> zobristTable;
    std::default_random_engine generator(42);
    std::uniform_int_distribution<uint64_t> distribution(0, std::numeric_limits<uint64_t>::max());
-
    for (int state = 0; state < stateSpaceSize; state++) {
-        zobristTable[state] = distribution(generator);
+    // Considering only the x cordinate as the abstract feature
+         if (x1 == 1) 
+         {
+            zobristTable[state] = distribution(generator);
+         }
     }
     for (int state = 0; state < stateSpaceSize; state++) {
         std::cout << "State " << state << ": " << zobristTable[state] << std::endl;
     }
 }
-
 void AStar::Generator::clearCollisions()
 {
     walls.clear();
 }
-
+int hashfunc (int value, int NumThreads)
+{
+    return value%NumThreads;
+}
 AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
 {
    auto start = std::chrono::high_resolution_clock::now();
@@ -97,9 +106,6 @@ AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
     while (!openSet.empty()) {
         auto current_it = openSet.begin();
         current = *current_it;
-    #pragma omp parallel
-    {
-        #pragma omp for
         for (auto it = openSet.begin(); it != openSet.end(); it++) {
             auto node = *it;
             if (node->getScore() <= current->getScore()) {
@@ -107,28 +113,26 @@ AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
                 current_it = it;
             }
         }
-    }
-
         if (current->coordinates == target_) {
             break;
         }
-
         closedSet.push_back(current);
         openSet.erase(current_it);
-    //auto start = std::chrono::high_resolution_clock::now();
-    uint NUM_THREADS = 8;
-    #pragma omp parallel
+  
+ const int numThreads = 8;
+ #pragma omp parallel num_threads(numThreads)
     {
-        omp_set_num_threads(NUM_THREADS);
+        int threadID = omp_get_thread_num();
         #pragma omp for
         for (uint i = 0; i < directions; ++i) {
+            if (hashfunc(i, numThreads) == threadID) {
             Vec2i newCoordinates(current->coordinates + direction[i]);
             
             if (detectCollision(newCoordinates) ||
                 findNodeOnList(closedSet, newCoordinates)) {
                 continue;
             }
-            uint totalCost = current->G + ((i < 4) ? 10 : 14);  //NOTE: Predefined costs are given to nodes as of now, for straight lines = 10 and diagnol = 14
+            uint totalCost = current->G + ((i < 4) ? 10 : 14);
 
             Node *successor = findNodeOnList(openSet, newCoordinates);
             if (successor == nullptr) {
@@ -141,16 +145,13 @@ AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
                 successor->parent = current;
                 successor->G = totalCost;
             }
-             //std::cout << "Thread ID: " << omp_get_thread_num() << " - " << i << std::endl;
+            }
     }
         }
-       
-
     }
-         auto stop = std::chrono::high_resolution_clock::now();
+    auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
-	
-    std::cout <<"\n"<<"Time taken by function: "<< duration.count() << " microseconds \n";
+
     CoordinateList path;
     while (current != nullptr) {
         path.push_back(current->coordinates);
