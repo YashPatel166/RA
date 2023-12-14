@@ -9,7 +9,8 @@
 #include <vector>
 #include <functional>
 #include <set>
-
+#include <unordered_map>
+#include <random>
 namespace AStar
 {
     struct Vec2i
@@ -25,13 +26,14 @@ namespace AStar
     using uint = unsigned int;
     using HeuristicFunction = std::function<uint(Vec2i, Vec2i)>;
     using CoordinateList = std::vector<Vec2i>;
+   // using Zobristt = std::unordered_map<int, uint64_t>;
 
     struct Node
     {
         uint G, H;
         Vec2i coordinates;
         Node *parent;
-
+        uint StateSpaceSize;
         Node(Vec2i coord_, Node *parent_ = nullptr);
         uint getScore();
     };
@@ -47,13 +49,15 @@ namespace AStar
     public:
         Generator();
         void setWorldSize(Vec2i worldSize_);
+        void initializeConstants();
         void setDiagonalMovement(bool enable_);
         void setHeuristic(HeuristicFunction heuristic_);
         CoordinateList findPath(Vec2i source_, Vec2i target_);
         void addCollision(Vec2i coordinates_);
         void removeCollision(Vec2i coordinates_);
         void clearCollisions();
-        void ZobristTable(uint stateSpaceSize);
+       // void ZobristTable(uint x1, uint x2, uint y1, uint y2,uint stateSpaceSize);
+        void CalcHash(uint stateSpaceSize);
 
     private:
         HeuristicFunction heuristic;
