@@ -1,5 +1,6 @@
 #include "AStar.hpp"
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <math.h>
 #include <chrono>
@@ -8,9 +9,10 @@
 #include <random>
 #include "/usr/local/opt/libomp/include/omp.h"
 #include <cstdint>
+#include <ctime>
 
-
-
+int nodeConstants[10000];
+int nodeid1 = 1;
 using namespace std::placeholders;
 
 bool AStar::Vec2i::operator == (const Vec2i& coordinates_)
@@ -35,8 +37,7 @@ AStar::Generator::Generator()
     setDiagonalMovement(false);
     setHeuristic(&Heuristic::manhattan);
     direction = {
-        { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 },
-        { -1, -1 }, { 1, 1 }, { -1, 1 }, { 1, -1 }
+        { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 }
     };
 }
 
@@ -47,7 +48,7 @@ void AStar::Generator::setWorldSize(Vec2i worldSize_)
 
 void AStar::Generator::setDiagonalMovement(bool enable_)
 {
-    directions = (enable_ ? 8 : 4);
+     directions = (enable_ ? 8 : 4);
 }
 
 void AStar::Generator::setHeuristic(HeuristicFunction heuristic_)
@@ -93,17 +94,22 @@ void AStar::Generator::clearCollisions()
 {
     walls.clear();
 }
-int hashfunc (int value, int NumThreads)
+uint hashfunc (uint value, uint NumThreads)
 {
-    return value%NumThreads;
+    return value % NumThreads;
+}
+void AStar::Generator::initializeConstants() {
+    for (int i = 0; i < 10000; i++) {
+        nodeConstants[i] = rand() % 10 + 1;
+    }
 }
 AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
 {
-   auto start = std::chrono::high_resolution_clock::now();
+ auto start = std::chrono::system_clock::now();
     Node *current = nullptr;
     NodeSet openSet, closedSet;
-    openSet.reserve(10000);
-    closedSet.reserve(10000);
+    openSet.reserve(100000);
+    closedSet.reserve(100000);
     openSet.push_back(new Node(source_));
 
     while (!openSet.empty()) {
@@ -122,20 +128,29 @@ AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
         closedSet.push_back(current);
         openSet.erase(current_it);
   
- const int numThreads = 16;
+ const uint numThreads = 4;
+
  #pragma omp parallel num_threads(numThreads)
     {
-        int threadID = omp_get_thread_num();
+      
         #pragma omp for
-        for (uint i = 0; i < directions; ++i) {
+        for (uint i = 0; i < directions; i++) {
+             uint threadID = omp_get_thread_num();
+            // std::cout<<threadID<<"\n";
+
             if (hashfunc(i, numThreads) == threadID) {
-            Vec2i newCoordinates(current->coordinates + direction[i]);
+              if(threadID < 4) {
+            //  std::cout<<threadID<<"\n";
+               Vec2i newCoordinates(current->coordinates + direction[i]);
             
+              
             if (detectCollision(newCoordinates) ||
                 findNodeOnList(closedSet, newCoordinates)) {
                 continue;
             }
-            uint totalCost = current->G + (rand() % 10 + 1);
+            
+            nodeid1++;
+            uint totalCost = current->G + nodeConstants[nodeid1];//(rand() % 10 + 1); // initialize it before loop
 
             Node *successor = findNodeOnList(openSet, newCoordinates);
             if (successor == nullptr) {
@@ -151,10 +166,13 @@ AStar::CoordinateList AStar::Generator::findPath(Vec2i source_, Vec2i target_)
             }
     }
         }
+        }
     }
 
-    auto stop = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+   auto end = std::chrono::system_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+
+    std::cout << "Elapsed time: " << duration << " nanoseconds\n";
 
 
     CoordinateList path;
